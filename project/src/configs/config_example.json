@@ -1,0 +1,33 @@
+[
+    {
+        "search": "Total:",
+        "replace": "Total: $1,234.56",
+        "font_size": 12,
+        "offset": [0, 0]
+    },
+    {
+        "search": "Invoice #",
+        "replace": "Invoice #ABC-123",
+        "font_size": 10,
+        "offset": [0, 0]
+    },
+    {
+        "search": "Subtotal:",
+        "replace": "Subtotal: $1,000.00",
+        "font_size": 11,
+        "offset": [0, 0]
+    },
+    {
+        "search": "Tax:",
+        "replace": "Tax: $123.45",
+        "font_size": 11,
+        "offset": [0, 0]
+    },
+    {
+        "search": "Due Date:",
+        "replace": "Due Date: March 15, 2025",
+        "font_size": 10,
+        "offset": [0, 0]
+    }
+]
+

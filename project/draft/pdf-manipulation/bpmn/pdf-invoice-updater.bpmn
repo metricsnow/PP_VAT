@@ -1,266 +1,189 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                   xmlns:modeler="http://camunda.org/schema/modeler"
-                   id="Definitions_1"
-                   targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.6.1">
   <bpmn2:process id="PDFInvoiceUpdater" name="PDF Invoice Updater" isExecutable="true">
-    
-    <!-- Start Event -->
-    <bpmn2:startEvent id="StartEvent_1" name="Start Application"/>
-    <bpmn2:sequenceFlow id="Flow_OpenApp" sourceRef="StartEvent_1" targetRef="OpenApp"/>
-    
-    <!-- Open App -->
+    <bpmn2:startEvent id="StartEvent_1" name="Start Application" />
+    <bpmn2:sequenceFlow id="Flow_OpenApp" sourceRef="StartEvent_1" targetRef="OpenApp" />
     <bpmn2:manualTask id="OpenApp" name="Open Application">
       <bpmn2:incoming>Flow_OpenApp</bpmn2:incoming>
       <bpmn2:outgoing>Flow_FileExplorer</bpmn2:outgoing>
     </bpmn2:manualTask>
-    
-    <!-- Open File Explorer -->
     <bpmn2:userTask id="OpenFileExplorer" name="Open File Explorer and Select PDF">
+      <bpmn2:documentation>User selects PDF file from file system</bpmn2:documentation>
       <bpmn2:incoming>Flow_FileExplorer</bpmn2:incoming>
       <bpmn2:outgoing>Flow_Preview</bpmn2:outgoing>
-      <bpmn2:documentation>User selects PDF file from file system</bpmn2:documentation>
     </bpmn2:userTask>
-    
-    <!-- Load and Preview PDF -->
     <bpmn2:serviceTask id="LoadPreview" name="Load PDF and Show Preview" implementation="pymupdf.open">
       <bpmn2:incoming>Flow_Preview</bpmn2:incoming>
       <bpmn2:outgoing>Flow_IdentVAT</bpmn2:outgoing>
     </bpmn2:serviceTask>
-    
-    <!-- Automatically Identify VAT Percentage -->
     <bpmn2:serviceTask id="IdentifyVAT" name="Automatically Identify VAT %" implementation="re.findall">
+      <bpmn2:documentation>Scan PDF for tax rate patterns and extract percentage</bpmn2:documentation>
       <bpmn2:incoming>Flow_IdentVAT</bpmn2:incoming>
       <bpmn2:outgoing>Flow_ConfirmVAT</bpmn2:outgoing>
-      <bpmn2:documentation>Scan PDF for tax rate patterns and extract percentage</bpmn2:documentation>
     </bpmn2:serviceTask>
-    
-    <!-- User Confirms VAT -->
     <bpmn2:userTask id="ConfirmVAT" name="Confirm VAT Percentage">
+      <bpmn2:documentation>User reviews detected VAT percentage and confirms or modifies</bpmn2:documentation>
       <bpmn2:incoming>Flow_ConfirmVAT</bpmn2:incoming>
       <bpmn2:outgoing>Flow_CalcValues</bpmn2:outgoing>
-      <bpmn2:documentation>User reviews detected VAT percentage and confirms or modifies</bpmn2:documentation>
     </bpmn2:userTask>
-    
-    <!-- Calculate Values to Change -->
     <bpmn2:serviceTask id="CalculateValues" name="Calculate New Values">
+      <bpmn2:documentation>Automatically calculate new tax amounts based on confirmed VAT percentage</bpmn2:documentation>
       <bpmn2:incoming>Flow_CalcValues</bpmn2:incoming>
       <bpmn2:outgoing>Flow_StartLoop</bpmn2:outgoing>
-      <bpmn2:documentation>Automatically calculate new tax amounts based on confirmed VAT percentage</bpmn2:documentation>
     </bpmn2:serviceTask>
-    
-    <!-- Gateway: More Values to Process -->
     <bpmn2:exclusiveGateway id="CheckMoreValues" name="More Values?">
       <bpmn2:incoming>Flow_Next</bpmn2:incoming>
       <bpmn2:outgoing>Flow_ProcessValue</bpmn2:outgoing>
       <bpmn2:outgoing>Flow_AllProcessed</bpmn2:outgoing>
     </bpmn2:exclusiveGateway>
-    
-    <!-- Process Individual Value (Sub-process) -->
-    <bpmn2:subProcess id="ProcessValue" name="Process Value" triggeredByEvent="false">
+    <bpmn2:subProcess id="ProcessValue" name="Process Value">
       <bpmn2:incoming>Flow_StartLoop</bpmn2:incoming>
       <bpmn2:incoming>Flow_ProcessValue</bpmn2:incoming>
       <bpmn2:outgoing>Flow_Next</bpmn2:outgoing>
-      
-      <!-- Show Current Value -->
-      <bpmn2:serviceTask id="ShowCurrentValue" name="Show Current Value"/>
-      <bpmn2:sequenceFlow id="SubFlow_1" sourceRef="ShowCurrentValue" targetRef="ShowNewValue"/>
-      
-      <!-- Show Calculated New Value -->
-      <bpmn2:serviceTask id="ShowNewValue" name="Show Calculated New Value"/>
-      <bpmn2:sequenceFlow id="SubFlow_2" sourceRef="ShowNewValue" targetRef="UserConfirm"/>
-      
-      <!-- User Confirms or Declines -->
+      <bpmn2:serviceTask id="ShowCurrentValue" name="Show Current Value" />
+      <bpmn2:sequenceFlow id="SubFlow_1" sourceRef="ShowCurrentValue" targetRef="ShowNewValue" />
+      <bpmn2:serviceTask id="ShowNewValue" name="Show Calculated New Value" />
+      <bpmn2:sequenceFlow id="SubFlow_2" sourceRef="ShowNewValue" targetRef="UserConfirm" />
       <bpmn2:userTask id="UserConfirm" name="Confirm or Decline">
         <bpmn2:documentation>User confirms to overwrite this value or declines to keep original</bpmn2:documentation>
       </bpmn2:userTask>
-      <bpmn2:sequenceFlow id="SubFlow_3" sourceRef="UserConfirm" targetRef="GatewayApprove"/>
-      
-      <!-- Gateway: User Decision -->
-      <bpmn2:exclusiveGateway id="GatewayApprove" name="User Decision"/>
-      <bpmn2:sequenceFlow id="SubFlow_Approve" sourceRef="GatewayApprove" targetRef="ApplyUpdate" name="Confirm"/>
-      <bpmn2:sequenceFlow id="SubFlow_Decline" sourceRef="GatewayApprove" targetRef="SubProcessEnd" name="Decline"/>
-      
-      <!-- Apply Update -->
+      <bpmn2:sequenceFlow id="SubFlow_3" sourceRef="UserConfirm" targetRef="GatewayApprove" />
+      <bpmn2:exclusiveGateway id="GatewayApprove" name="User Decision" />
+      <bpmn2:sequenceFlow id="SubFlow_Approve" name="Confirm" sourceRef="GatewayApprove" targetRef="ApplyUpdate" />
+      <bpmn2:sequenceFlow id="SubFlow_Decline" name="Decline" sourceRef="GatewayApprove" targetRef="SubProcessEnd" />
       <bpmn2:scriptTask id="ApplyUpdate" name="Apply Update to PDF">
         <bpmn2:documentation>Cover old text with yellow box and overlay new text</bpmn2:documentation>
       </bpmn2:scriptTask>
-      <bpmn2:sequenceFlow id="SubFlow_4" sourceRef="ApplyUpdate" targetRef="SubProcessEnd"/>
-      
-      <!-- Sub-process End -->
-      <bpmn2:endEvent id="SubProcessEnd"/>
+      <bpmn2:sequenceFlow id="SubFlow_4" sourceRef="ApplyUpdate" targetRef="SubProcessEnd" />
+      <bpmn2:endEvent id="SubProcessEnd" />
     </bpmn2:subProcess>
-    
-    <bpmn2:sequenceFlow id="Flow_Next" sourceRef="ProcessValue" targetRef="CheckMoreValues"/>
-    
-    <!-- Gateway: More Values to Process -->
-    <bpmn2:exclusiveGateway id="CheckMoreValues" name="More Values?">
-      <bpmn2:incoming>Flow_Next</bpmn2:incoming>
-      <bpmn2:outgoing>Flow_ProcessValue</bpmn2:outgoing>
-      <bpmn2:outgoing>Flow_AllProcessed</bpmn2:outgoing>
-    </bpmn2:exclusiveGateway>
-    
-    <!-- User Selects Save Folder -->
+    <bpmn2:sequenceFlow id="Flow_Next" sourceRef="ProcessValue" targetRef="CheckMoreValues" />
     <bpmn2:userTask id="SelectFolder" name="Select Output Folder">
+      <bpmn2:documentation>User selects folder where updated PDF should be saved</bpmn2:documentation>
       <bpmn2:incoming>Flow_AllProcessed</bpmn2:incoming>
       <bpmn2:outgoing>Flow_Save</bpmn2:outgoing>
-      <bpmn2:documentation>User selects folder where updated PDF should be saved</bpmn2:documentation>
     </bpmn2:userTask>
-    
-    <!-- Save PDF -->
     <bpmn2:serviceTask id="SavePDF" name="Save Updated PDF" implementation="document.save">
       <bpmn2:incoming>Flow_Save</bpmn2:incoming>
       <bpmn2:outgoing>Flow_End</bpmn2:outgoing>
     </bpmn2:serviceTask>
-    
-    <!-- End Event -->
     <bpmn2:endEvent id="EndEvent_1" name="Process Complete">
       <bpmn2:incoming>Flow_End</bpmn2:incoming>
     </bpmn2:endEvent>
-    
-    <!-- Sequence Flows -->
-    <bpmn2:sequenceFlow id="Flow_OpenApp" sourceRef="StartEvent_1" targetRef="OpenApp"/>
-    <bpmn2:sequenceFlow id="Flow_FileExplorer" sourceRef="OpenApp" targetRef="OpenFileExplorer"/>
-    <bpmn2:sequenceFlow id="Flow_Preview" sourceRef="OpenFileExplorer" targetRef="LoadPreview"/>
-    <bpmn2:sequenceFlow id="Flow_IdentVAT" sourceRef="LoadPreview" targetRef="IdentifyVAT"/>
-    <bpmn2:sequenceFlow id="Flow_ConfirmVAT" sourceRef="IdentifyVAT" targetRef="ConfirmVAT"/>
-    <bpmn2:sequenceFlow id="Flow_CalcValues" sourceRef="ConfirmVAT" targetRef="CalculateValues"/>
-    <bpmn2:sequenceFlow id="Flow_StartLoop" sourceRef="CalculateValues" targetRef="ProcessValue"/>
-    <bpmn2:sequenceFlow id="Flow_Next" sourceRef="ProcessValue" targetRef="CheckMoreValues"/>
-    <bpmn2:sequenceFlow id="Flow_ProcessValue" sourceRef="CheckMoreValues" targetRef="ProcessValue" name="More values exist"/>
-    <bpmn2:sequenceFlow id="Flow_AllProcessed" sourceRef="CheckMoreValues" targetRef="SelectFolder" name="All values processed"/>
-    <bpmn2:sequenceFlow id="Flow_Save" sourceRef="SelectFolder" targetRef="SavePDF"/>
-    <bpmn2:sequenceFlow id="Flow_End" sourceRef="SavePDF" targetRef="EndEvent_1"/>
+    <bpmn2:sequenceFlow id="Flow_FileExplorer" sourceRef="OpenApp" targetRef="OpenFileExplorer" />
+    <bpmn2:sequenceFlow id="Flow_Preview" sourceRef="OpenFileExplorer" targetRef="LoadPreview" />
+    <bpmn2:sequenceFlow id="Flow_IdentVAT" sourceRef="LoadPreview" targetRef="IdentifyVAT" />
+    <bpmn2:sequenceFlow id="Flow_ConfirmVAT" sourceRef="IdentifyVAT" targetRef="ConfirmVAT" />
+    <bpmn2:sequenceFlow id="Flow_CalcValues" sourceRef="ConfirmVAT" targetRef="CalculateValues" />
+    <bpmn2:sequenceFlow id="Flow_StartLoop" sourceRef="CalculateValues" targetRef="ProcessValue" />
+    <bpmn2:sequenceFlow id="Flow_ProcessValue" name="More values exist" sourceRef="CheckMoreValues" targetRef="ProcessValue" />
+    <bpmn2:sequenceFlow id="Flow_AllProcessed" name="All values processed" sourceRef="CheckMoreValues" targetRef="SelectFolder" />
+    <bpmn2:sequenceFlow id="Flow_Save" sourceRef="SelectFolder" targetRef="SavePDF" />
+    <bpmn2:sequenceFlow id="Flow_End" sourceRef="SavePDF" targetRef="EndEvent_1" />
   </bpmn2:process>
-  
-  <!-- Diagram -->
   <bpmndi:BPMNDiagram id="BPMNDiagram_1" name="PDFInvoiceUpdater">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="PDFInvoiceUpdater">
-      
-      <!-- Start Event -->
       <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
-        <dc:Bounds x="100" y="300" width="36" height="36"/>
+        <dc:Bounds x="180" y="300" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="336" width="80" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      
-      <!-- Open App -->
       <bpmndi:BPMNShape id="OpenApp_di" bpmnElement="OpenApp">
-        <dc:Bounds x="200" y="278" width="100" height="80"/>
+        <dc:Bounds x="280" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- Open File Explorer -->
       <bpmndi:BPMNShape id="OpenFileExplorer_di" bpmnElement="OpenFileExplorer" modeler:entry="true">
-        <dc:Bounds x="350" y="278" width="100" height="80"/>
+        <dc:Bounds x="430" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- Load Preview -->
       <bpmndi:BPMNShape id="LoadPreview_di" bpmnElement="LoadPreview">
-        <dc:Bounds x="500" y="278" width="100" height="80"/>
+        <dc:Bounds x="580" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- Identify VAT -->
       <bpmndi:BPMNShape id="IdentifyVAT_di" bpmnElement="IdentifyVAT">
-        <dc:Bounds x="650" y="278" width="100" height="80"/>
+        <dc:Bounds x="730" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- Confirm VAT -->
       <bpmndi:BPMNShape id="ConfirmVAT_di" bpmnElement="ConfirmVAT">
-        <dc:Bounds x="800" y="278" width="100" height="80"/>
+        <dc:Bounds x="880" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- Calculate Values -->
       <bpmndi:BPMNShape id="CalculateValues_di" bpmnElement="CalculateValues">
-        <dc:Bounds x="950" y="278" width="100" height="80"/>
+        <dc:Bounds x="1030" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- Process Value Sub-Process -->
-      <bpmndi:BPMNShape id="ProcessValue_di" bpmnElement="ProcessValue" isExpanded="true">
-        <dc:Bounds x="1100" y="200" width="400" height="200"/>
+      <bpmndi:BPMNShape id="CheckMoreValues_di" bpmnElement="CheckMoreValues" isMarkerVisible="true">
+        <dc:Bounds x="1675" y="293" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1666" y="353" width="68" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      
-      <!-- Check More Values Gateway -->
-      <bpmndi:BPMNShape id="CheckMoreValues_di" bpmnElement="CheckMoreValues">
-        <dc:Bounds x="1520" y="293" width="50" height="50"/>
-      </bpmndi:BPMNShape>
-      
-      <!-- Select Folder -->
       <bpmndi:BPMNShape id="SelectFolder_di" bpmnElement="SelectFolder">
-        <dc:Bounds x="1630" y="278" width="100" height="80"/>
+        <dc:Bounds x="1800" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- Save PDF -->
       <bpmndi:BPMNShape id="SavePDF_di" bpmnElement="SavePDF">
-        <dc:Bounds x="1780" y="278" width="100" height="80"/>
+        <dc:Bounds x="1960" y="278" width="100" height="80" />
       </bpmndi:BPMNShape>
-      
-      <!-- End Event -->
       <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
-        <dc:Bounds x="1930" y="300" width="36" height="36"/>
+        <dc:Bounds x="2132" y="300" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2105" y="344" width="90" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      
-      <!-- Flows -->
+      <bpmndi:BPMNShape id="ProcessValue_di" bpmnElement="ProcessValue" isExpanded="true">
+        <dc:Bounds x="1180" y="218" width="400" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_OpenApp_di" bpmnElement="Flow_OpenApp">
-        <di:waypoint x="136" y="318"/>
-        <di:waypoint x="200" y="318"/>
+        <di:waypoint x="216" y="318" />
+        <di:waypoint x="280" y="318" />
       </bpmndi:BPMNEdge>
-      
-      <bpmndi:BPMNEdge id="Flow_FileExplorer_di" bpmnElement="Flow_FileExplorer">
-        <di:waypoint x="300" y="318"/>
-        <di:waypoint x="350" y="318"/>
-      </bpmndi:BPMNEdge>
-      
-      <bpmndi:BPMNEdge id="Flow_Preview_di" bpmnElement="Flow_Preview">
-        <di:waypoint x="450" y="318"/>
-        <di:waypoint x="500" y="318"/>
-      </bpmndi:BPMNEdge>
-      
-      <bpmndi:BPMNEdge id="Flow_IdentVAT_di" bpmnElement="Flow_IdentVAT">
-        <di:waypoint x="600" y="318"/>
-        <di:waypoint x="650" y="318"/>
-      </bpmndi:BPMNEdge>
-      
-      <bpmndi:BPMNEdge id="Flow_ConfirmVAT_di" bpmnElement="Flow_ConfirmVAT">
-        <di:waypoint x="750" y="318"/>
-        <di:waypoint x="800" y="318"/>
-      </bpmndi:BPMNEdge>
-      
-      <bpmndi:BPMNEdge id="Flow_CalcValues_di" bpmnElement="Flow_CalcValues">
-        <di:waypoint x="900" y="318"/>
-        <di:waypoint x="950" y="318"/>
-      </bpmndi:BPMNEdge>
-      
-      <bpmndi:BPMNEdge id="Flow_StartLoop_di" bpmnElement="Flow_StartLoop">
-        <di:waypoint x="1050" y="318"/>
-        <di:waypoint x="1100" y="315"/>
-      </bpmndi:BPMNEdge>
-      
       <bpmndi:BPMNEdge id="Flow_Next_di" bpmnElement="Flow_Next">
-        <di:waypoint x="1500" y="318"/>
-        <di:waypoint x="1520" y="318"/>
+        <di:waypoint x="1580" y="318" />
+        <di:waypoint x="1675" y="318" />
       </bpmndi:BPMNEdge>
-      
-      <bpmndi:BPMNEdge id="Flow_AllProcessed_di" bpmnElement="Flow_AllProcessed">
-        <di:waypoint x="1570" y="318"/>
-        <di:waypoint x="1630" y="318"/>
+      <bpmndi:BPMNEdge id="Flow_FileExplorer_di" bpmnElement="Flow_FileExplorer">
+        <di:waypoint x="380" y="318" />
+        <di:waypoint x="430" y="318" />
       </bpmndi:BPMNEdge>
-      
+      <bpmndi:BPMNEdge id="Flow_Preview_di" bpmnElement="Flow_Preview">
+        <di:waypoint x="530" y="318" />
+        <di:waypoint x="580" y="318" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_IdentVAT_di" bpmnElement="Flow_IdentVAT">
+        <di:waypoint x="680" y="318" />
+        <di:waypoint x="730" y="318" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ConfirmVAT_di" bpmnElement="Flow_ConfirmVAT">
+        <di:waypoint x="830" y="318" />
+        <di:waypoint x="880" y="318" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CalcValues_di" bpmnElement="Flow_CalcValues">
+        <di:waypoint x="980" y="318" />
+        <di:waypoint x="1030" y="318" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StartLoop_di" bpmnElement="Flow_StartLoop">
+        <di:waypoint x="1130" y="321" />
+        <di:waypoint x="1180" y="321" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_More_di" bpmnElement="Flow_ProcessValue">
-        <di:waypoint x="1545" y="343"/>
-        <di:waypoint x="1545" y="400"/>
-        <di:waypoint x="1200" y="400"/>
+        <di:waypoint x="1700" y="293" />
+        <di:waypoint x="1700" y="130" />
+        <di:waypoint x="1390" y="130" />
+        <di:waypoint x="1390" y="218" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1506" y="103" width="87" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      
+      <bpmndi:BPMNEdge id="Flow_AllProcessed_di" bpmnElement="Flow_AllProcessed">
+        <di:waypoint x="1725" y="318" />
+        <di:waypoint x="1800" y="318" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1737" y="293" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Save_di" bpmnElement="Flow_Save">
-        <di:waypoint x="1730" y="318"/>
-        <di:waypoint x="1780" y="318"/>
+        <di:waypoint x="1900" y="318" />
+        <di:waypoint x="1960" y="318" />
       </bpmndi:BPMNEdge>
-      
       <bpmndi:BPMNEdge id="Flow_End_di" bpmnElement="Flow_End">
-        <di:waypoint x="1880" y="318"/>
-        <di:waypoint x="1930" y="318"/>
+        <di:waypoint x="2060" y="318" />
+        <di:waypoint x="2132" y="318" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
