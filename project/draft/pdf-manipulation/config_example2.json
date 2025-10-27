@@ -1,0 +1,21 @@
+[
+    {
+        "search": "GST(9%)",
+        "replace": "GST(0%)",
+        "font_size": 12.0,
+        "offset": [0, 0]
+    },
+    {
+        "search": "$0.83",
+        "replace": "$0.00",
+        "font_size": 11.0,
+        "offset": [0, 0]
+    },
+    {
+        "search": "$10",
+        "replace": "$9.17",
+        "font_size": 11.0,
+        "offset": [0, 0]
+    }
+]
+
