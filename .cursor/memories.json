@@ -1,0 +1,19 @@
+{
+  "framework": {
+    "version": "2.0",
+    "initialized": "2025-10-27T16:52:12Z",
+    "status": "production-ready"
+  },
+  "patterns": {
+    "code_organization": "Feature-based with atomic task system",
+    "documentation_standard": "Google-style docstrings, comprehensive markdown",
+    "testing_approach": "Unit tests with 90%+ coverage",
+    "security_standard": "OWASP compliant with input validation"
+  },
+  "preferences": {
+    "prefer_functional_components": true,
+    "use_type_annotations": true,
+    "prefer_async_await": true,
+    "logging_level": "info"
+  }
+}

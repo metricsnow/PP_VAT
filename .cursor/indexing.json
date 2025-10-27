@@ -1,0 +1,21 @@
+{
+  "includes": [
+    "**/*.js",
+    "**/*.d.ts"
+  ],
+  "excludes": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".git/**",
+    ".cursor/**",
+    "development_framework/**",
+    "development_framework_v2/**",
+    "**/*.min.js",
+    "**/*.map",
+    "coverage/**",
+    ".nyc_output/**"
+  ],
+  "maxFileSize": 50000,
+  "contextWindow": 200000
+}

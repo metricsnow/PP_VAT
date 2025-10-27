@@ -1,0 +1,83 @@
+# Build artifacts
+dist/
+build/
+*.min.js
+*.map
+
+# Dependencies
+node_modules/
+vendor/
+.pnp.*
+
+# Configuration and sensitive files
+.env*
+*.key
+*.pem
+secrets/
+
+# Large data files
+*.csv
+*.json.gz
+*.db
+data/
+
+# Generated code
+generated/
+.next/
+.nuxt/
+
+# Framework-specific exclusions
+.cursor/logs/
+.cursor/remediation/
+temp/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Python virtual environments
+venv/
+env/
+ENV/
+
+# Cache directories
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
