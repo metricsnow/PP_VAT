@@ -14,6 +14,7 @@ Automated VAT detection and removal system that processes PDF invoices by identi
 src/
 ├── __init__.py           # Module initialization and exports
 ├── main.py               # Command-line entry point
+├── main_gui.py           # GUI entry point
 ├── README.md             # This file
 ├── core/                 # Core functionality
 │   ├── __init__.py       # Core module exports
@@ -24,6 +25,11 @@ src/
 │   ├── auto_vat_removal.py    # Automated VAT removal (MAIN)
 │   ├── detect_vat_demo.py     # VAT detection demo
 │   └── extract_pdf_text.py    # Text extraction utility
+├── ui/                   # GUI interface
+│   ├── __init__.py       # UI module exports
+│   ├── main_window.py    # Main application window
+│   ├── pdf_preview_widget.py  # PDF preview component
+│   └── README.md         # UI documentation
 ├── configs/              # Configuration examples
 │   ├── config_example.json
 │   ├── config_example2.json
@@ -93,7 +99,26 @@ python project/src/scripts/auto_vat_removal.py
 
 ## Quick Start
 
-### Using Automated VAT Removal
+### Using GUI (Recommended)
+
+```bash
+# Run the GUI application
+cd project
+python src/main_gui.py
+
+# Or use the launcher script (Windows)
+launch_gui.bat
+```
+
+The GUI provides:
+- Split-screen preview (original vs corrected)
+- Automatic VAT detection
+- Live preview before saving
+- Easy-to-use interface
+
+See `project/GUI_USAGE.md` for detailed usage instructions.
+
+### Using Automated VAT Removal (Command Line)
 
 ```bash
 # Run the automated VAT removal system
