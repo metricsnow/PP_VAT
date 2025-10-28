@@ -19,6 +19,9 @@ const userInfo = document.getElementById('userInfo');
 // Global state
 let processedPdfBlob = null;
 let processedPdfName = '';
+let originalFile = null;  // Store original file
+let reviewPdfBlob = null;  // Store review version (yellow)
+let downloadPdfBlob = null;  // Store download version (white)
 
 // Helper function to format numbers with thousands separator and decimal comma
 function formatNumber(num) {
@@ -146,16 +149,19 @@ async function handleFile(file) {
     processingSection.classList.remove('hidden');
     errorSection.classList.add('hidden');
 
-    // Create FormData
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('style', 'download');  // Default to download style (white highlights)
+    // Store original file
+    originalFile = file;
+
+    // Create FormData for REVIEW version (yellow highlights) - for preview
+    const formDataReview = new FormData();
+    formDataReview.append('file', file);
+    formDataReview.append('style', 'review');  // Yellow highlights for preview
 
     try {
-        // Upload and process
+        // Upload and process REVIEW version (for preview)
         const response = await fetch('/api/process', {
             method: 'POST',
-            body: formData
+            body: formDataReview
         });
 
         if (!response.ok) {
@@ -211,18 +217,34 @@ async function handleFile(file) {
             calculationDetailsEl.textContent = '';
         }
 
-        // Download the processed PDF
+        // Store REVIEW version (yellow highlights) for preview
         const pdfResponse = await fetch(result.download_url);
         if (!pdfResponse.ok) {
             throw new Error('Failed to download processed PDF');
         }
 
-        processedPdfBlob = await pdfResponse.blob();
+        reviewPdfBlob = await pdfResponse.blob();
         processedPdfName = file.name.replace('.pdf', '_corrected.pdf');
 
-        // Create URLs for iframe preview
+        // Create DOWNLOAD version (white highlights) in background
+        const formDataDownload = new FormData();
+        formDataDownload.append('file', file);
+        formDataDownload.append('style', 'download');  // White highlights for download
+        
+        fetch('/api/process', {
+            method: 'POST',
+            body: formDataDownload
+        }).then(response => response.json())
+        .then(result => fetch(result.download_url))
+        .then(pdfResponse => pdfResponse.blob())
+        .then(blob => {
+            downloadPdfBlob = blob;  // Store download version (white)
+        })
+        .catch(error => console.error('Failed to generate download version:', error));
+
+        // Create URLs for iframe preview with REVIEW version (yellow highlights)
         const originalUrl = URL.createObjectURL(file);
-        const correctedUrl = URL.createObjectURL(processedPdfBlob);
+        const correctedUrl = URL.createObjectURL(reviewPdfBlob);
 
         // Update iframes
         originalPdf.src = originalUrl;
@@ -234,10 +256,21 @@ async function handleFile(file) {
     }
 }
 
-// Download processed PDF
+// Download processed PDF (white version for professional use)
 function downloadProcessedPdf() {
-    if (processedPdfBlob) {
-        const url = URL.createObjectURL(processedPdfBlob);
+    if (downloadPdfBlob) {
+        const url = URL.createObjectURL(downloadPdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = processedPdfName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } else if (reviewPdfBlob) {
+        // Fallback to review version if download version not ready
+        console.warn('Download version not ready, using review version');
+        const url = URL.createObjectURL(reviewPdfBlob);
         const a = document.createElement('a');
         a.href = url;
         a.download = processedPdfName;
@@ -254,7 +287,10 @@ function processAnother() {
     processingSection.classList.add('hidden');
     uploadSection.classList.remove('hidden');
     processedPdfBlob = null;
+    reviewPdfBlob = null;
+    downloadPdfBlob = null;
     processedPdfName = '';
+    originalFile = null;
     
     // Clear file input
     fileInput.value = '';

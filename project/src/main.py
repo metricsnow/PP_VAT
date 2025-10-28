@@ -605,12 +605,15 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean", output_style:
     corrected_total = None
     
     # Look for "Total Value:" or similar patterns in the text
-    # First try SUM-Net-Value as it's most specific and reliable
+    # Priority: patterns that avoid VAT amounts
+    # We need to match the line structure carefully to avoid matching VAT lines
     total_patterns = [
+        r'Sum-Gross-Value\s*:\s*(\d{1,3}(?:\.\d{3})*,\d{2})',  # Sum-Gross-Value (most reliable, matches 1.540,00)
+        r'Total\s+Value\s*:\s*(\d{1,3}(?:\.\d{3})*,\d{2})\s*\n',  # Total Value followed by newline (not followed by VAT line)
+        r'Total\s+Qty\.\s*:\s*\d+[\s\S]*?Total\s+Value\s*:\s*(\d{1,3}(?:\.\d{3})*,\d{2})',  # Match in context
         r'SUM-Net-Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',  # Most specific
-        r'(?<!VAT)Total\s+Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',  # Fixed-width lookbehind
-        r'Betrag[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',  # German total
-        r'Gesamt[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})'  # German total alternative
+        r'Betrag[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})(?!\s*(?:%|MwSt|VAT))',  # German total not followed by VAT
+        r'Gesamt[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})(?!\s*(?:%|MwSt|VAT))'  # German alternative
     ]
     
     for pattern in total_patterns:

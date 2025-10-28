@@ -36,6 +36,10 @@ project/draft/
 *.pdf
 *.PDF
 
+# Allow config files (including CSV)
+!project/src/configs/importers.csv
+!project/src/configs/*.json
+
 # Development framework (not needed in production)
 development_framework_v2/
 
