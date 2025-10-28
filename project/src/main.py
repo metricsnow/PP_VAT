@@ -473,10 +473,11 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
         
         # Store highlight
         padding = 2
+        padding_right = 12  # 10px extra on right side
         expanded_rect = pymupdf.Rect(
             rect.x0 - padding,
             rect.y0 - padding,
-            rect.x1 + padding,
+            rect.x1 + padding_right,
             rect.y1 + padding
         )
         highlights.append((page_num, expanded_rect))
@@ -535,10 +536,12 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
     corrected_total = None
     
     # Look for "Total Value:" or similar patterns in the text
+    # Use negative lookbehind to avoid matching VAT amounts
     total_patterns = [
-        r'Total\s+Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
-        r'Betrag[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
-        r'Gesamt[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})'
+        r'(?<!VAT[:\s])(?<!\%\s*VAT[:\s])Total\s+Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
+        r'SUM-Net-Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
+        r'(?<!VAT[:\s])Betrag[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
+        r'(?<!VAT[:\s])Gesamt[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})'
     ]
     
     for pattern in total_patterns:
