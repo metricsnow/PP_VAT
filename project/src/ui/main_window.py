@@ -338,8 +338,8 @@ class PP_VATMainWindow(QMainWindow):
             # Create a temporary output file
             temp_output = self.pdf_path.parent / f"{self.pdf_path.stem}_temp.pdf"
             
-            # Use the complete process_invoice function
-            output_path = process_invoice(self.pdf_path, "_temp")
+            # Use the complete process_invoice function with "review" style for GUI preview
+            output_path = process_invoice(self.pdf_path, "_temp", "review")
             
             if output_path and output_path.exists():
                 # Store temp file path for cleanup later

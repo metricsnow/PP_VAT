@@ -189,12 +189,13 @@ async def get_current_user_info(request: Request) -> UserInfo:
 
 
 @router.post("/api/process")
-async def process_pdf(file: UploadFile = File(...)):
+async def process_pdf(file: UploadFile = File(...), style: Optional[str] = Form("review")):
     """
     Process PDF invoice: detect VAT and remove from prices.
     
     Args:
         file: PDF file to process
+        style: Output style - "review" (yellow) or "download" (white)
         
     Returns:
         JSON response with metadata and download URL
@@ -226,8 +227,12 @@ async def process_pdf(file: UploadFile = File(...)):
         input_path = Path(tmp.name)
     
     try:
-        # Process PDF
-        result = process_invoice(input_path, "_corrected")
+        # Validate style parameter
+        if style not in ["review", "download"]:
+            style = "review"
+        
+        # Process PDF with specified style
+        result = process_invoice(input_path, "_corrected", style)
         
         if not result or not result.get('output_path') or not result['output_path'].exists():
             raise HTTPException(

@@ -149,6 +149,7 @@ async function handleFile(file) {
     // Create FormData
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('style', 'download');  // Default to download style (white highlights)
 
     try {
         // Upload and process

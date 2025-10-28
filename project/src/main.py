@@ -68,13 +68,14 @@ def get_importer_info(country_code: str):
     return None
 
 
-def add_importer_info_box(doc, country_code: str):
+def add_importer_info_box(doc, country_code: str, output_style: str = "review"):
     """
     Add importer information box to the first page of the PDF.
     
     Args:
         doc: PyMuPDF document
         country_code: Country code to look up importer
+        output_style: Output style - "review" for yellow, "download" for white
     """
     importer_info = get_importer_info(country_code)
     
@@ -141,9 +142,10 @@ def add_importer_info_box(doc, country_code: str):
     
     print(f"[INFO] Final box dimensions: {box_width}x{box_height} at position ({x:.1f}, {y:.1f})")
     
-    # Draw yellow rectangle
+    # Draw rectangle with appropriate color based on output style
+    box_color = (1, 1, 0.85) if output_style == "review" else (1, 1, 1)
     box_rect = pymupdf.Rect(x, y, x + box_width, y + box_height)
-    page.draw_rect(box_rect, color=(1, 1, 0.85), fill=(1, 1, 0.85))
+    page.draw_rect(box_rect, color=box_color, fill=box_color)
     
     # Add text - 3 lines with tight spacing, vertically centered in box
     line_height = 14  # Tight spacing for compact box
@@ -317,13 +319,14 @@ def extract_prices_and_positions(doc, detected_vat):
     return all_prices
 
 
-def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
+def process_invoice(pdf_path: Path, output_suffix: str = "_clean", output_style: str = "review"):
     """
     Process PDF invoice: detect VAT, remove from prices, highlight changes.
     
     Args:
         pdf_path: Path to PDF invoice
         output_suffix: Suffix for output filename
+        output_style: Output style - "review" for yellow highlights, "download" for white highlights
         
     Returns:
         Path to processed PDF
@@ -414,7 +417,7 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
             
             # Check if this text contains the VAT pattern like "(8,10 % VAT" or "(8.10 % VAT"
             if re.search(rf'{detected_vat}', text_near) and re.search(r'VAT', text_near, re.IGNORECASE):
-                # Draw yellow highlight over the entire VAT label area
+                # Draw highlight over the entire VAT label area with appropriate color
                 padding = 2
                 # Extend the highlight to cover the full text area
                 expanded_rect = pymupdf.Rect(
@@ -423,7 +426,8 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
                     rect.x1 + 50,
                     rect.y1 + padding
                 )
-                page.draw_rect(expanded_rect, color=(1, 1, 0.85), fill=(1, 1, 0.85))
+                vat_color = (1, 1, 0.85) if output_style == "review" else (1, 1, 1)
+                page.draw_rect(expanded_rect, color=vat_color, fill=vat_color)
                 print(f"  -> VAT label highlighted on page {page_num + 1}")
                 break  # Only highlight once per page
     
@@ -473,14 +477,75 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
         
         # Store highlight
         padding = 2
-        padding_right = 12  # 10px extra on right side
-        expanded_rect = pymupdf.Rect(
-            rect.x0 - padding,
-            rect.y0 - padding,
-            rect.x1 + padding_right,
-            rect.y1 + padding
+        
+        # Check for trailing characters near the price that should be included
+        # Look for patterns like ",72)" or other decimal continuation after the price
+        page = doc[page_num]
+        expanded_search_rect = pymupdf.Rect(
+            rect.x0 - 2,
+            rect.y0 - 2,
+            rect.x1 + 30,  # Check up to 30px to the right for trailing chars
+            rect.y1 + 2
         )
-        highlights.append((page_num, expanded_rect))
+        nearby_text = page.get_textbox(expanded_search_rect)
+        
+        # If we find text that looks like it should be part of the price (e.g., ",72)")
+        # expand the rectangle to cover it
+        trailing_pattern = r',\d{2}\)|,\d{4}\)'
+        trailing_match = re.search(trailing_pattern, nearby_text)
+        
+        if trailing_match:
+            # Found trailing characters - need to search for the full extent
+            # Use dict extraction to find the exact bbox
+            text_dict = page.get_text("dict")
+            found_extended = False
+            
+            for block in text_dict["blocks"]:
+                if "lines" not in block:
+                    continue
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        span_rect = pymupdf.Rect(span["bbox"])
+                        # Check if this span is near our price rectangle
+                        if (abs(span_rect.x0 - rect.x1) < 30 and 
+                            abs(span_rect.y0 - rect.y0) < 3):
+                            if re.search(trailing_pattern, span["text"]):
+                                # Found trailing text, extend rectangle to cover it
+                                expanded_rect = pymupdf.Rect(
+                                    rect.x0 - padding,
+                                    rect.y0 - padding,
+                                    span_rect.x1 + padding,
+                                    rect.y1 + padding
+                                )
+                                highlights.append((page_num, expanded_rect))
+                                found_extended = True
+                                print(f"  -> Extended highlight to cover trailing text: {span['text']}")
+                                break
+                        if found_extended:
+                            break
+                    if found_extended:
+                        break
+                if found_extended:
+                    break
+            
+            if not found_extended:
+                # Default highlight
+                expanded_rect = pymupdf.Rect(
+                    rect.x0 - padding,
+                    rect.y0 - padding,
+                    rect.x1 + padding,
+                    rect.y1 + padding
+                )
+                highlights.append((page_num, expanded_rect))
+        else:
+            # Standard highlight
+            expanded_rect = pymupdf.Rect(
+                rect.x0 - padding,
+                rect.y0 - padding,
+                rect.x1 + padding,
+                rect.y1 + padding
+            )
+            highlights.append((page_num, expanded_rect))
         
         # Store text overlay (only for non-VAT amounts)
         if not is_vat_amount_line:
@@ -489,9 +554,12 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
             text_overlays.append((page_num, adjusted_pos, new_price_str))
     
     # STEP 4: Draw all highlights first (bottom layer)
+    # Choose color based on output style: yellow for review, white for download
+    highlight_color = (1, 1, 0.85) if output_style == "review" else (1, 1, 1)
+    
     for page_num, expanded_rect in highlights:
         page = doc[page_num]
-        page.draw_rect(expanded_rect, color=(1, 1, 0.85), fill=(1, 1, 0.85))
+        page.draw_rect(expanded_rect, color=highlight_color, fill=highlight_color)
     
     # STEP 5: Insert all text on top (top layer)
     for page_num, adjusted_pos, new_price_str in text_overlays:
@@ -517,9 +585,10 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
                 render_mode=0
             )
     
-    # Save
-    output_path = pdf_path.parent / f"{pdf_path.stem}{output_suffix}.pdf"
-    print(f"\n[INFO] Saving to: {output_path}")
+    # Save with style suffix
+    style_suffix = "_review" if output_style == "review" else "_download"
+    output_path = pdf_path.parent / f"{pdf_path.stem}{output_suffix}{style_suffix}.pdf"
+    print(f"\n[INFO] Saving {output_style} version to: {output_path}")
     
     # Calculate extended metadata
     # Extract country code
@@ -528,7 +597,7 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
     # Add importer info box based on country code
     if country_code:
         print(f"\n[INFO] Detected country code: {country_code}")
-        add_importer_info_box(doc, country_code)
+        add_importer_info_box(doc, country_code, output_style)
     
     # Calculate totals - find the actual "Total Value" from PDF text
     # Reason: Summing all prices counts duplicates and includes VAT amounts
@@ -594,20 +663,22 @@ def print_usage():
     print("\nAutomated VAT Removal System")
     print("=" * 60)
     print("\nDetects VAT percentage, finds product prices, removes VAT,")
-    print("and highlights changes with yellow rectangles.")
+    print("and highlights changes with rectangles.")
     print("\nUsage:")
-    print("  python -m src.main <pdf_file> [output_suffix]")
+    print("  python -m src.main <pdf_file> [output_suffix] [style]")
     print("\nArguments:")
     print("  pdf_file      Path to PDF invoice")
     print("  output_suffix Suffix for output (default: '_clean')")
+    print("  style         Output style: 'review' (yellow) or 'download' (white) (default: 'review')")
     print("\nExample:")
     print("  python -m src.main project/examples/example_1.PDF")
-    print("  python -m src.main invoice.pdf _corrected")
+    print("  python -m src.main invoice.pdf _corrected review")
+    print("  python -m src.main invoice.pdf _corrected download")
     print("\nWhat it does:")
     print("  1. Detect VAT percentage automatically")
     print("  2. Find all product prices in PDF")
     print("  3. Calculate prices without VAT")
-    print("  4. Apply yellow rectangles over prices")
+    print("  4. Apply rectangles over prices (yellow for review, white for download)")
     print("  5. Overlay new prices without VAT")
 
 
@@ -619,13 +690,19 @@ def main():
     
     pdf_path = Path(sys.argv[1])
     output_suffix = sys.argv[2] if len(sys.argv) > 2 else "_clean"
+    output_style = sys.argv[3] if len(sys.argv) > 3 else "review"
+    
+    # Validate style parameter
+    if output_style not in ["review", "download"]:
+        print(f"[ERROR] Invalid style '{output_style}'. Must be 'review' or 'download'")
+        sys.exit(1)
     
     if not pdf_path.exists():
         print(f"[ERROR] PDF file not found: {pdf_path}")
         sys.exit(1)
     
     try:
-        result = process_invoice(pdf_path, output_suffix)
+        result = process_invoice(pdf_path, output_suffix, output_style)
         
         if result and result.get('output_path'):
             print(f"\n[SUCCESS] File created: {result['output_path']}")
