@@ -8,8 +8,6 @@ const fileInput = document.getElementById('fileInput');
 const uploadSection = document.getElementById('upload-section');
 const processingSection = document.getElementById('processing-section');
 const errorSection = document.getElementById('error-section');
-const vatPercentage = document.getElementById('vatPercentage');
-const pricesCount = document.getElementById('pricesCount');
 const originalPdf = document.getElementById('originalPdf');
 const correctedPdf = document.getElementById('correctedPdf');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -21,6 +19,23 @@ const userInfo = document.getElementById('userInfo');
 // Global state
 let processedPdfBlob = null;
 let processedPdfName = '';
+
+// Helper function to format numbers with thousands separator and decimal comma
+function formatNumber(num) {
+    if (num === null || num === undefined) return '--';
+    
+    // Convert to number if it's a string
+    const value = typeof num === 'string' ? parseFloat(num) : num;
+    
+    // Format with 2 decimal places
+    const parts = value.toFixed(2).split('.');
+    
+    // Add thousands separator (dot) in European format
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    // Return with comma as decimal separator
+    return parts.join(',');
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -64,20 +79,32 @@ function setupEventListeners() {
 
     // Drag and drop handlers
     if (uploadArea) {
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#000';
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
         });
 
-        uploadArea.addEventListener('dragleave', () => {
+        uploadArea.addEventListener('dragenter', (e) => {
+            uploadArea.style.borderColor = '#000';
+            uploadArea.style.backgroundColor = '#F8F8F8';
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
             uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.backgroundColor = '';
         });
 
         uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
             uploadArea.style.borderColor = '#ddd';
-            if (e.dataTransfer.files.length > 0) {
-                handleFile(e.dataTransfer.files[0]);
+            uploadArea.style.backgroundColor = '';
+            
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files && files.length > 0) {
+                handleFile(files[0]);
             }
         });
     }
@@ -119,10 +146,6 @@ async function handleFile(file) {
     processingSection.classList.remove('hidden');
     errorSection.classList.add('hidden');
 
-    // Reset previous values
-    vatPercentage.textContent = '--';
-    pricesCount.textContent = '--';
-
     // Create FormData
     const formData = new FormData();
     formData.append('file', file);
@@ -141,13 +164,50 @@ async function handleFile(file) {
 
         const result = await response.json();
         
-        // Update VAT display
+        // Update Document Analysis display
+        const vatPercentageEl = document.getElementById('vatPercentage');
+        const countryCodeEl = document.getElementById('countryCode');
+        const priorTotalValueEl = document.getElementById('priorTotalValue');
+        const correctedTotalValueEl = document.getElementById('correctedTotalValue');
+        const calculationDetailsEl = document.getElementById('calculationDetails');
+        
+        // Update VAT
         if (result.detected_vat !== null && result.detected_vat !== undefined) {
-            vatPercentage.textContent = `${result.detected_vat}%`;
+            vatPercentageEl.textContent = `${result.detected_vat}%`;
+        } else {
+            vatPercentageEl.textContent = '--';
         }
         
-        if (result.prices_updated !== null && result.prices_updated !== undefined) {
-            pricesCount.textContent = result.prices_updated;
+        // Update Country
+        if (result.country_name) {
+            countryCodeEl.textContent = `${result.country_name} (${result.country_code})`;
+        } else if (result.country_code) {
+            countryCodeEl.textContent = result.country_code;
+        } else {
+            countryCodeEl.textContent = '--';
+        }
+        
+        // Update Prior Total Value
+        if (result.prior_total_value) {
+            priorTotalValueEl.textContent = formatNumber(result.prior_total_value);
+        } else {
+            priorTotalValueEl.textContent = '--';
+        }
+        
+        // Update Corrected Total Value
+        if (result.corrected_total_value) {
+            correctedTotalValueEl.textContent = formatNumber(result.corrected_total_value);
+        } else {
+            correctedTotalValueEl.textContent = '--';
+        }
+        
+        // Update Calculation Details
+        if (result.detected_vat && result.prior_total_value && result.corrected_total_value) {
+            const priorFormatted = formatNumber(result.prior_total_value);
+            const correctedFormatted = formatNumber(result.corrected_total_value);
+            calculationDetailsEl.textContent = `Calculation applied: ${priorFormatted} - ((${priorFormatted.replace(',', '.')} / (100+${result.detected_vat})) * 100) = ${correctedFormatted}`;
+        } else {
+            calculationDetailsEl.textContent = '';
         }
 
         // Download the processed PDF
@@ -215,4 +275,3 @@ function showError(message) {
     processingSection.classList.add('hidden');
     document.getElementById('errorMessage').textContent = message;
 }
-

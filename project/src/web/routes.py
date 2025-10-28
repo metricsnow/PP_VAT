@@ -227,13 +227,15 @@ async def process_pdf(file: UploadFile = File(...)):
     
     try:
         # Process PDF
-        output_path = process_invoice(input_path, "_corrected")
+        result = process_invoice(input_path, "_corrected")
         
-        if not output_path or not output_path.exists():
+        if not result or not result.get('output_path') or not result['output_path'].exists():
             raise HTTPException(
                 status_code=500,
                 detail="Failed to process PDF. VAT may not be detected."
             )
+        
+        output_path = result['output_path']
         
         # Generate download token
         file_hash = hashlib.md5(file.filename.encode()).hexdigest()[:8]
@@ -247,29 +249,15 @@ async def process_pdf(file: UploadFile = File(...)):
             "expires_at": datetime.now() + timedelta(hours=1)
         }
         
-        # Read PDF text to get VAT info (simplified)
-        try:
-            import pymupdf
-            doc = pymupdf.open(str(input_path))
-            full_text = ""
-            for page in doc:
-                full_text += page.get_text()
-            doc.close()
-            
-            from project.docs.core.utils import PDFUtils
-            detected_vat = PDFUtils.detect_vat_percentage(full_text)
-            
-            # Count prices (simplified - in real app, extract from process_invoice return)
-            prices_count = 0  # Will be extracted properly in next iteration
-        except Exception:
-            detected_vat = None
-            prices_count = 0
-        
         # Return metadata with download link
         return JSONResponse(content={
             "status": "success",
-            "detected_vat": detected_vat,
-            "prices_updated": prices_count,
+            "detected_vat": result.get('detected_vat'),
+            "country_code": result.get('country_code'),
+            "country_name": result.get('country_name'),
+            "prior_total_value": result.get('prior_total'),
+            "corrected_total_value": result.get('corrected_total'),
+            "prices_updated": result.get('prices_count', 0),
             "download_token": download_token,
             "download_url": f"/api/download/{download_token}"
         })

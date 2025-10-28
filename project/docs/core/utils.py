@@ -272,4 +272,119 @@ class PDFUtils:
             Total amount
         """
         return subtotal + tax_amount
+    
+    @staticmethod
+    def detect_country_code(text: str) -> Optional[str]:
+        """
+        Detect country code from text (typically from sender/address info).
+        
+        Looks for patterns like "CH-6900", "DE-12345", etc.
+        
+        Args:
+            text: Text to search for country code
+            
+        Returns:
+            Country code (e.g., "CH", "DE") or None if not found
+            
+        Example:
+            >>> detect_country_code("Via Pietro Capelli 18 - CH-6900 Lugano")
+            'CH'
+        """
+        # Pattern to match country codes: 2-3 uppercase letters, optionally followed by dash/space/postal code
+        patterns = [
+            r'\b([A-Z]{2,3})[-\s]\d',  # "CH-6900" or "DE 12345"
+            r'\b([A-Z]{2,3})\b',  # Standalone country code (less reliable)
+        ]
+        
+        for pattern in patterns:
+            matches = re.finditer(pattern, text)
+            for match in matches:
+                code = match.group(1)
+                # Reason: Common European country codes are 2 letters
+                if len(code) == 2:
+                    return code
+        
+        return None
+    
+    @staticmethod
+    def get_country_name(code: str) -> str:
+        """
+        Convert country code to full country name.
+        
+        Args:
+            code: 2-letter country code
+            
+        Returns:
+            Country name or code if not found
+        """
+        country_map = {
+            'CH': 'Switzerland',
+            'DE': 'Germany',
+            'FR': 'France',
+            'IT': 'Italy',
+            'AT': 'Austria',
+            'UK': 'United Kingdom',
+            'US': 'United States',
+            'NL': 'Netherlands',
+            'BE': 'Belgium',
+            'ES': 'Spain',
+            'PT': 'Portugal',
+            'SE': 'Sweden',
+            'NO': 'Norway',
+            'DK': 'Denmark',
+            'FI': 'Finland',
+            'PL': 'Poland',
+            'CZ': 'Czech Republic',
+        }
+        
+        return country_map.get(code.upper(), code)
+    
+    @staticmethod
+    def extract_all_prices(text: str) -> List[float]:
+        """
+        Extract all price values from text.
+        
+        Args:
+            text: Text to search for prices
+            
+        Returns:
+            List of price values as floats
+        """
+        # European price format: "1.540,00" or "1540,00"
+        price_pattern = r'\d{1,3}(?:\.\d{3})*,\d{2}'
+        
+        prices = []
+        matches = re.finditer(price_pattern, text)
+        
+        for match in matches:
+            try:
+                price_str = match.group(0)
+                # Remove thousands separator, replace comma with dot
+                price_clean = price_str.replace('.', '').replace(',', '.')
+                price_value = float(price_clean)
+                prices.append(price_value)
+            except (ValueError, AttributeError):
+                continue
+        
+        return prices
+    
+    @staticmethod
+    def calculate_price_without_vat(price_with_vat: float, vat_percentage: float) -> float:
+        """
+        Calculate price without VAT from price with VAT.
+        
+        Formula: price_without_vat = price_with_vat / (100 + vat_percentage) * 100
+        
+        Args:
+            price_with_vat: Price including VAT
+            vat_percentage: VAT percentage (e.g., 8.1 for 8.1%)
+            
+        Returns:
+            Price without VAT
+            
+        Example:
+            >>> calculate_price_without_vat(1000, 8.1)
+            925.925925925926
+        """
+        return price_with_vat / (100 + vat_percentage) * 100
 

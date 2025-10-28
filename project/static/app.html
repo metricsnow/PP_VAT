@@ -17,7 +17,9 @@
         </div>
         <div class="header-content">
             <div class="logo-container">
-                <img src="/static/images/h-pp-logo.svg" alt="Philipp Plein" />
+                <a href="/app" class="logo-link">
+                    <img src="/static/images/h-pp-logo.svg" alt="Philipp Plein" />
+                </a>
                 <p class="logo-subtitle">Automated VAT Detection & Removal</p>
             </div>
         </div>
@@ -55,9 +57,36 @@
         </div>
 
         <div id="processing-section" class="processing-section hidden">
-            <div class="vat-info" id="vatInfo">
-                <span>Detected VAT: <strong id="vatPercentage">--</strong></span>
-                <span class="prices-info">Prices Updated: <strong id="pricesCount">--</strong></span>
+            <div class="disclaimer">
+                <p><strong>Note:</strong> This application is currently in beta-testing phase. Please verify all results carefully before use.</p>
+            </div>
+            <div class="document-analysis-container">
+                <div class="document-analysis" id="documentAnalysis">
+                    <h3>Document Analysis</h3>
+                    <table class="analysis-table">
+                        <tr>
+                            <td><strong>VAT:</strong></td>
+                            <td><span id="vatPercentage">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Country:</strong></td>
+                            <td><span id="countryCode">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prior total value:</strong></td>
+                            <td><span id="priorTotalValue">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Corrected total value:</strong></td>
+                            <td><span id="correctedTotalValue">--</span></td>
+                        </tr>
+                    </table>
+                    <div class="calculation-details" id="calculationDetails"></div>
+                </div>
+                <div class="actions">
+                    <button id="downloadBtn" class="btn-primary">Download Corrected PDF</button>
+                    <button id="processAnotherBtn" class="btn-secondary">Process Another Document</button>
+                </div>
             </div>
             
             <div class="split-view">
@@ -70,11 +99,6 @@
                     <iframe id="correctedPdf" class="pdf-viewer"></iframe>
                 </div>
             </div>
-
-            <div class="actions">
-                <button id="downloadBtn" class="btn-primary">Download Corrected PDF</button>
-                <button id="processAnotherBtn" class="btn-secondary">Process Another Invoice</button>
-            </div>
         </div>
 
         <div id="error-section" class="error-section hidden">
@@ -85,4 +109,4 @@
 
     <script src="/static/js/app.js"></script>
 </body>
-</html ADS>
+</html>

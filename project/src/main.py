@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 import re
 import pymupdf
+import csv
 
 # Import PDFUtils - add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -29,6 +30,181 @@ spec = importlib.util.spec_from_file_location(
 utils_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(utils_module)
 PDFUtils = utils_module.PDFUtils
+
+
+def get_importer_info(country_code: str):
+    """
+    Get importer information from CSV based on country code.
+    
+    Args:
+        country_code: 2-letter country code (e.g., "CH", "GB", "AU")
+        
+    Returns:
+        Dictionary with importer info or None if not found
+    """
+    if not country_code:
+        return None
+    
+    # Path to importers CSV
+    csv_path = Path(__file__).parent / "configs" / "importers.csv"
+    
+    if not csv_path.exists():
+        print(f"[WARNING] Importers CSV not found at: {csv_path}")
+        return None
+    
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row['country_code'].upper() == country_code.upper():
+                    return {
+                        'importer': row['importer'],
+                        'vat_number': row['vat_number'],
+                        'country': row['country']
+                    }
+    except Exception as e:
+        print(f"[WARNING] Error reading importers CSV: {e}")
+    
+    return None
+
+
+def add_importer_info_box(doc, country_code: str):
+    """
+    Add importer information box to the first page of the PDF.
+    
+    Args:
+        doc: PyMuPDF document
+        country_code: Country code to look up importer
+    """
+    importer_info = get_importer_info(country_code)
+    
+    if not importer_info:
+        print(f"[INFO] No importer info found for country code: {country_code}")
+        return
+    
+    print(f"[INFO] Adding importer info box for {country_code}: {importer_info['importer']}")
+    
+    # Add to first page
+    page = doc[0]
+    page_rect = page.rect
+    
+    # Find packlist row to use its upper border as lower boundary for importer box
+    y_position = 200  # Default position
+    text_blocks = page.get_text("blocks")
+    
+    # Look for packlist row containing "Packinglist No.:" and "Packinglist date:"
+    packlist_pattern = re.compile(r'packinglist', re.IGNORECASE)
+    
+    packlist_row_top = None
+    
+    # Find packlist row
+    for block in text_blocks[:50]:  # Check more blocks
+        block_text = block[4]
+        block_y0 = block[1]  # Top y-coordinate (y0 from block)
+        
+        # Look for packlist line - this gives us the top of the packlist row
+        if packlist_pattern.search(block_text):
+            # Use the lowest packlist top found (in case there are multiple)
+            if packlist_row_top is None or block_y0 < packlist_row_top:
+                packlist_row_top = block_y0
+                print(f"[INFO] Found packlist row '{block_text.strip()[:50]}' top at y={block_y0:.1f}")
+    
+    # Calculate box dimensions - accommodate full text but compact
+    # Full importer name: "Cream della Cream Switzerland GmbH" = 40 chars
+    # Full VAT number: "VAT Number: CHE-114.821.618" = 28 chars
+    box_width = 280  # Compact width to fit content
+    box_height = 50  # Reduced height for more compact box
+    
+    # Calculate y_position: place above packlist row
+    if packlist_row_top is not None:
+        # Use upper border of packlist row as lower boundary for our box
+        # Position box so its bottom is above the packlist row top
+        margin = 8  # Reduced spacing between box bottom and packlist row top
+        y_position = packlist_row_top - box_height - margin
+        print(f"[INFO] Placing box above packlist row (top at y={packlist_row_top:.1f})")
+        print(f"[INFO] Box top will be at y={y_position:.1f} (box bottom at y={packlist_row_top - margin:.1f})")
+    else:
+        print(f"[WARNING] Could not find packlist row, using default y={y_position}")
+    x = 10  # Left side with small padding
+    y = y_position  # Below recipient address area
+    
+    print(f"[INFO] Final box dimensions: {box_width}x{box_height} at position ({x:.1f}, {y:.1f})")
+    
+    # Draw yellow rectangle
+    box_rect = pymupdf.Rect(x, y, x + box_width, y + box_height)
+    page.draw_rect(box_rect, color=(1, 1, 0.85), fill=(1, 1, 0.85))
+    
+    # Add text - 3 lines with tight spacing, vertically centered in box
+    line_height = 14  # Tight spacing for compact box
+    # Center text vertically in box: (box_height - (3 lines * line_height)) / 2 + base offset
+    total_text_height = line_height * 2.5  # 2.5 line spacings for 3 lines of text
+    text_y = y + (box_height - total_text_height) / 2 + line_height  # Vertically centered
+    
+    # Line 1: "Importer"
+    try:
+        page.insert_text(
+            pymupdf.Point(x + 10, text_y),
+            "Importer",
+            fontsize=10.0,
+            fontname="helv",
+            color=(0, 0, 0),
+            render_mode=0
+        )
+    except Exception:
+        pass
+    
+    # Line 2: Importer name (full length - no truncation)
+    importer_name = importer_info['importer']
+    
+    try:
+        page.insert_text(
+            pymupdf.Point(x + 10, text_y + line_height),
+            importer_name,
+            fontsize=9.0,
+            fontname="helv",
+            color=(0, 0, 0),
+            render_mode=0
+        )
+    except Exception:
+        # Fallback: try with basic encoding
+        try:
+            page.insert_text(
+                pymupdf.Point(x + 10, text_y + line_height),
+                importer_name.encode('ascii', 'ignore').decode(),
+                fontsize=9.0,
+                fontname="helv",
+                color=(0, 0, 0),
+                render_mode=0
+            )
+        except Exception:
+            pass
+    
+    # Line 3: VAT Number
+    vat_text = f"VAT Number: {importer_info['vat_number']}"
+    try:
+        page.insert_text(
+            pymupdf.Point(x + 10, text_y + line_height * 2),
+            vat_text,
+            fontsize=8.5,
+            fontname="helv",
+            color=(0, 0, 0),
+            render_mode=0
+        )
+    except Exception:
+        # Fallback
+        try:
+            page.insert_text(
+                pymupdf.Point(x + 10, text_y + line_height * 2),
+                vat_text.encode('ascii', 'ignore').decode(),
+                fontsize=8.5,
+                fontname="helv",
+                color=(0, 0, 0),
+                render_mode=0
+            )
+        except Exception:
+            pass
+    
+    print(f"[SUCCESS] Importer info box added successfully")
 
 
 def extract_prices_and_positions(doc, detected_vat):
@@ -333,6 +509,19 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
     output_path = pdf_path.parent / f"{pdf_path.stem}{output_suffix}.pdf"
     print(f"\n[INFO] Saving to: {output_path}")
     
+    # Calculate extended metadata
+    # Extract country code
+    country_code = PDFUtils.detect_country_code(full_text)
+    
+    # Add importer info box based on country code
+    if country_code:
+        print(f"\n[INFO] Detected country code: {country_code}")
+        add_importer_info_box(doc, country_code)
+    
+    # Calculate totals
+    prior_total = sum([price_info[3] for price_info in all_prices])
+    corrected_total = sum([price_info[4] for price_info in all_prices])
+    
     # Save PDF
     doc.save(str(output_path))
     doc.close()
@@ -340,7 +529,16 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
     print(f"[SUCCESS] VAT removal complete!")
     print(f"[SUCCESS] Output: {output_path}")
     
-    return output_path
+    # Return extended metadata
+    return {
+        'output_path': output_path,
+        'detected_vat': detected_vat,
+        'country_code': country_code,
+        'country_name': PDFUtils.get_country_name(country_code) if country_code else None,
+        'prior_total': prior_total,
+        'corrected_total': corrected_total,
+        'prices_count': len(all_prices)
+    }
 
 
 def print_usage():
@@ -379,10 +577,10 @@ def main():
         sys.exit(1)
     
     try:
-        output_path = process_invoice(pdf_path, output_suffix)
+        result = process_invoice(pdf_path, output_suffix)
         
-        if output_path:
-            print(f"\n[SUCCESS] File created: {output_path}")
+        if result and result.get('output_path'):
+            print(f"\n[SUCCESS] File created: {result['output_path']}")
             return 0
         else:
             return 1
