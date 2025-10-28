@@ -145,10 +145,11 @@ def add_importer_info_box(doc, country_code: str):
     box_rect = pymupdf.Rect(x, y, x + box_width, y + box_height)
     page.draw_rect(box_rect, color=(1, 1, 0.85), fill=(1, 1, 0.85))
     
-    # Add text - 3 lines with tight spacing, reduced top padding
+    # Add text - 3 lines with tight spacing, vertically centered in box
     line_height = 14  # Tight spacing for compact box
-    # Less spacing between upper edge and Importer text
-    text_y = y + 6  # Reduced top padding from 10 to 6
+    # Center text vertically in box: (box_height - (3 lines * line_height)) / 2 + base offset
+    total_text_height = line_height * 2.5  # 2.5 line spacings for 3 lines of text
+    text_y = y + (box_height - total_text_height) / 2 + line_height  # Vertically centered
     
     # Line 1: "Importer"
     try:
