@@ -115,7 +115,7 @@ def add_importer_info_box(doc, country_code: str):
     # Calculate box dimensions - accommodate full text but compact
     # Full importer name: "Cream della Cream Switzerland GmbH" = 40 chars
     # Full VAT number: "VAT Number: CHE-114.821.618" = 28 chars
-    box_width = 280  # Compact width to fit content
+    box_width = 290  # Compact width to fit content (increased by 10px on right side)
     box_height = 50  # Reduced height for more compact box
     
     # Calculate y_position: place above packlist row
@@ -529,9 +529,43 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
         print(f"\n[INFO] Detected country code: {country_code}")
         add_importer_info_box(doc, country_code)
     
-    # Calculate totals
-    prior_total = sum([price_info[3] for price_info in all_prices])
-    corrected_total = sum([price_info[4] for price_info in all_prices])
+    # Calculate totals - find the actual "Total Value" from PDF text
+    # Reason: Summing all prices counts duplicates and includes VAT amounts
+    prior_total = None
+    corrected_total = None
+    
+    # Look for "Total Value:" or similar patterns in the text
+    total_patterns = [
+        r'Total\s+Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
+        r'Betrag[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
+        r'Gesamt[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})'
+    ]
+    
+    for pattern in total_patterns:
+        match = re.search(pattern, full_text, re.IGNORECASE)
+        if match:
+            total_str = match.group(1)
+            try:
+                # Convert format "1.540,00" to float 1540.0
+                prior_total = float(total_str.replace('.', '').replace(',', '.'))
+                print(f"[INFO] Found invoice total in text: {prior_total}")
+                break
+            except (ValueError, AttributeError):
+                continue
+    
+    # If we couldn't find the total, use max unique price as fallback
+    if prior_total is None:
+        unique_original_values = set([price_info[3] for price_info in all_prices])
+        prior_total = max(unique_original_values) if unique_original_values else 0
+        print(f"[INFO] Using max price as fallback: {prior_total}")
+    
+    # Calculate corrected total by removing VAT from prior total
+    if prior_total and detected_vat:
+        # Formula: corrected = prior / (1 + vat_percentage/100)
+        corrected_total = prior_total / (1 + detected_vat / 100)
+        print(f"[INFO] Calculated corrected total: {corrected_total:.2f}")
+    else:
+        corrected_total = prior_total if prior_total else 0
     
     # Save PDF
     doc.save(str(output_path))
