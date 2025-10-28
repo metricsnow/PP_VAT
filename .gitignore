@@ -16,7 +16,7 @@ vendor/
 secrets/
 
 # Large data files
-*.csv
+# *.csv  # Allow CSV files for configuration (like importers.csv)
 *.json.gz
 *.db
 data/
