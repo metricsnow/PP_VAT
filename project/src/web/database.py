@@ -20,6 +20,24 @@ users_db: Dict[str, dict] = {
         "hashed_password": "$2b$12$HfkwQpjp6Y7JLxKwM2sI/uozNaLnxBkfQaN9sTJP/6nEvgR6OHa4G",  # "admin07!"
         "full_name": "Marcus",
         "created_at": datetime.now().isoformat()
+    },
+    "user": {
+        "username": "user",
+        "hashed_password": "$2b$12$Am5W8Tpve0c6cyZror0BUO2e5CSWgk/a3xC9RKjiieloR8pVUFkE6",  # "test123"
+        "full_name": "User Account",
+        "created_at": datetime.now().isoformat()
+    },
+    "finance": {
+        "username": "finance",
+        "hashed_password": "$2b$12$9YqZ8Tn7QV6xK7Yq.r.GvHZvM8LQpK8LqY8YrRrGqHZwLZvM8LQpK8LqY8",  # "finance2024"
+        "full_name": "Finance Team",
+        "created_at": datetime.now().isoformat()
+    },
+    "kirill": {
+        "username": "kirill",
+        "hashed_password": "$2b$12$UeveRJhFL3IUNJ9olhQAKus3NnUqWCrzcko88WGobH0n.R8GPSO5K",  # "kirill5820!"
+        "full_name": "Kirill",
+        "created_at": datetime.now().isoformat()
     }
 }
 

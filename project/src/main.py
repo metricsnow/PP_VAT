@@ -96,18 +96,21 @@ def add_importer_info_box(doc, country_code: str):
     packlist_pattern = re.compile(r'packinglist', re.IGNORECASE)
     
     packlist_row_top = None
+    packlist_row_x0 = None
     
     # Find packlist row
     for block in text_blocks[:50]:  # Check more blocks
         block_text = block[4]
         block_y0 = block[1]  # Top y-coordinate (y0 from block)
+        block_x0 = block[0]  # Left x-coordinate (x0 from block)
         
         # Look for packlist line - this gives us the top of the packlist row
         if packlist_pattern.search(block_text):
             # Use the lowest packlist top found (in case there are multiple)
             if packlist_row_top is None or block_y0 < packlist_row_top:
                 packlist_row_top = block_y0
-                print(f"[INFO] Found packlist row '{block_text.strip()[:50]}' top at y={block_y0:.1f}")
+                packlist_row_x0 = block_x0  # Capture x position for alignment
+                print(f"[INFO] Found packlist row '{block_text.strip()[:50]}' top at y={block_y0:.1f}, left at x={block_x0:.1f}")
     
     # Calculate box dimensions - accommodate full text but compact
     # Full importer name: "Cream della Cream Switzerland GmbH" = 40 chars
@@ -125,7 +128,15 @@ def add_importer_info_box(doc, country_code: str):
         print(f"[INFO] Box top will be at y={y_position:.1f} (box bottom at y={packlist_row_top - margin:.1f})")
     else:
         print(f"[WARNING] Could not find packlist row, using default y={y_position}")
-    x = 10  # Left side with small padding
+    
+    # Align yellow box text with packlist text start
+    if packlist_row_x0 is not None:
+        # Offset box left by text padding (10px) so the text inside aligns with packlist text
+        x = packlist_row_x0 - 10
+        print(f"[INFO] Aligning yellow box text with packlist text start at x={packlist_row_x0:.1f} (box at x={x:.1f})")
+    else:
+        x = 10  # Fallback: Left side with small padding
+    
     y = y_position  # Below recipient address area
     
     print(f"[INFO] Final box dimensions: {box_width}x{box_height} at position ({x:.1f}, {y:.1f})")
@@ -134,11 +145,10 @@ def add_importer_info_box(doc, country_code: str):
     box_rect = pymupdf.Rect(x, y, x + box_width, y + box_height)
     page.draw_rect(box_rect, color=(1, 1, 0.85), fill=(1, 1, 0.85))
     
-    # Add text - 3 lines with tight spacing, vertically centered in box
+    # Add text - 3 lines with tight spacing, reduced top padding
     line_height = 14  # Tight spacing for compact box
-    # Center text vertically in box: (box_height - (3 lines * line_height)) / 2 + base offset
-    total_text_height = line_height * 2.5  # 2.5 line spacings for 3 lines of text
-    text_y = y + (box_height - total_text_height) / 2 + line_height  # Vertically centered
+    # Less spacing between upper edge and Importer text
+    text_y = y + 6  # Reduced top padding from 10 to 6
     
     # Line 1: "Importer"
     try:
