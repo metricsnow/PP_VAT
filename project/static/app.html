@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PP_VAT - Application</title>
+    <link rel="icon" type="image/png" href="/static/images/logo.png">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-top-bar">
+            <div class="top-bar-content">
+                <span id="userInfo">Welcome</span>
+                <button id="logoutBtn" class="btn-secondary">Logout</button>
+            </div>
+        </div>
+        <div class="header-content">
+            <div class="logo-container">
+                <img src="/static/images/h-pp-logo.svg" alt="Philipp Plein" />
+                <p class="logo-subtitle">Automated VAT Detection & Removal</p>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div id="upload-section" class="upload-section">
+            <div class="upload-intro">
+                <h2>Automated VAT Processing for PDF Invoices</h2>
+                <p>This application automatically detects VAT percentages in PDF invoices and calculates prices without VAT for accurate accounting at Philipp Plein. It highlights all modified prices with visual indicators and generates corrected invoices with complete audit trails.</p>
+            </div>
+            <div class="disclaimer">
+                <p><strong>Note:</strong> This application is currently in beta-testing phase. Please verify all results carefully before use.</p>
+            </div>
+            <div class="instructions-upload-grid">
+                <div class="upload-instructions">
+                    <h3>How to use:</h3>
+                    <ul>
+                        <li>Upload your PDF invoice file using the drag-and-drop area or click to select a file</li>
+                        <li>The system will automatically detect VAT percentages and extract all prices</li>
+                        <li>Review the corrected PDF with prices without VAT</li>
+                        <li>Download the corrected invoice when ready</li>
+                    </ul>
+                </div>
+                <div class="upload-area" id="uploadArea">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                    <p>Drop PDF invoice here or click to browse</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                </div>
+            </div>
+        </div>
+
+        <div id="processing-section" class="processing-section hidden">
+            <div class="vat-info" id="vatInfo">
+                <span>Detected VAT: <strong id="vatPercentage">--</strong></span>
+                <span class="prices-info">Prices Updated: <strong id="pricesCount">--</strong></span>
+            </div>
+            
+            <div class="split-view">
+                <div class="pdf-panel">
+                    <h3>Original PDF</h3>
+                    <iframe id="originalPdf" class="pdf-viewer"></iframe>
+                </div>
+                <div class="pdf-panel">
+                    <h3>Corrected PDF (VAT Removed)</h3>
+                    <iframe id="correctedPdf" class="pdf-viewer"></iframe>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="downloadBtn" class="btn-primary">Download Corrected PDF</button>
+                <button id="processAnotherBtn" class="btn-secondary">Process Another Invoice</button>
+            </div>
+        </div>
+
+        <div id="error-section" class="error-section hidden">
+            <div class="error-message" id="errorMessage"></div>
+            <button id="tryAgainBtn" class="btn-secondary">Try Again</button>
+        </div>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html ADS>

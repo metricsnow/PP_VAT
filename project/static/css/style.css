@@ -1,0 +1,589 @@
+:root {
+    /* Philipp Plein Color Palette - OFFICIAL BRAND COLORS
+       CRITICAL: Philipp Plein uses a STRICT monochrome palette
+       - Black (#000000) and White (#FFFFFF) only
+       - Gray shades for subtlety
+       - NO gold, NO yellow, NO metallic colors allowed
+       - These are NOT brand colors and violate CI guidelines
+    */
+    --color-black: #000000;
+    --color-white: #FFFFFF;
+    --color-gray-lighter: #F8F8F8;
+    --color-gray-light: #E5E5E5;
+    --color-gray: #999999;
+    --color-gray-dark: #666666;
+    
+    /* Legacy variables for backward compatibility */
+    --color-dark-gray: #666666;
+    --color-light-gray: #F5F5F5;
+    
+    /* Philipp Plein Typography */
+    --font-primary: 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    
+    /* Spacing System */
+    --spacing-unit: 16px;
+    --spacing-xs: 8px;
+    --spacing-sm: 16px;
+    --spacing-md: 24px;
+    --spacing-lg: 48px;
+    --spacing-xl: 96px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-primary);
+    background: var(--color-white);
+    color: var(--color-black);
+    line-height: 1.6;
+    font-weight: var(--font-weight-regular);
+}
+
+/* Header - Philipp Plein Style */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-top-bar {
+    background: var(--color-black);
+    padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+.top-bar-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.top-bar-content span {
+    color: var(--color-white);
+    font-size: 13px;
+}
+
+.top-bar-content .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--color-white);
+    color: var(--color-white);
+}
+
+.top-bar-content .btn-secondary:hover {
+    background: var(--color-white);
+    color: var(--color-black);
+}
+
+.header-content {
+    padding: var(--spacing-md) var(--spacing-lg) calc(var(--spacing-md) + var(--spacing-xs));
+    border-bottom: 1px solid var(--color-gray-light);
+    background: var(--color-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.logo-container img {
+    height: 40px;
+    width: auto;
+    margin-bottom: var(--spacing-xs);
+}
+
+.logo-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.logo-text {
+    font-size: 24px;
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-black);
+    line-height: 1.2;
+}
+
+header .logo-subtitle {
+    color: var(--color-gray-dark);
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+}
+
+header p {
+    color: var(--color-gray-dark);
+    margin-top: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+header nav {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+header .main-navigation {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 13px;
+    font-weight: var(--font-weight-medium);
+}
+
+.nav-links a {
+    color: var(--color-black);
+    text-decoration: none;
+    padding: 8px 12px;
+    transition: color 0.2s ease;
+}
+
+.nav-links a:hover {
+    color: var(--color-gray-dark);
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    position: absolute;
+    right: 0;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+}
+
+.icon-btn:hover {
+    opacity: 0.6;
+}
+
+header h1 {
+    font-size: 32px;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* Main Content */
+main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: calc(var(--spacing-unit) * 2);
+}
+
+/* Login Page */
+.login-page {
+    background: var(--color-light-gray);
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+}
+
+.login-box {
+    background: var(--color-white);
+    padding: calc(var(--spacing-unit) * 3);
+    border: 1px solid var(--color-gray);
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.login-box h2 {
+    margin-bottom: var(--spacing-unit);
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: var(--font-weight-bold);
+}
+
+.form-group {
+    margin-bottom: calc(var(--spacing-unit) * 1.5);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border:1px solid var(--color-gray);
+    border-radius: 4px;
+    font-size: 16px;
+    font-family: inherit;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-black);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.login-info {
+    margin-top: calc(var(--spacing-unit) * 2);
+    padding-top: calc(var(--spacing-unit) * 2);
+    border-top: 1px solid var(--color-gray);
+    font-size: 14px;
+    color: var(--color-dark-gray);
+}
+
+.login-info code {
+    background: var(--color-light-gray);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+/* Upload Section */
+.upload-section {
+    margin-top: calc(var(--spacing-unit) * 2);
+}
+
+.instructions-upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    align-items: stretch;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.upload-intro {
+    text-align: center;
+    margin-top: calc(var(--spacing-unit) * 2);
+    margin-bottom: calc(var(--spacing-unit) * 3);
+}
+
+.upload-intro h2 {
+    font-size: 28px;
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-unit);
+    color: var(--color-black);
+}
+
+.upload-intro p {
+    font-size: 16px;
+    color: var(--color-gray-dark);
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.disclaimer {
+    margin: calc(var(--spacing-unit) * 2) 0;
+    padding: var(--spacing-unit);
+    background: var(--color-gray-lighter);
+    border-left: 3px solid var(--color-black);
+    border-radius: 4px;
+}
+
+.disclaimer p {
+    font-size: 14px;
+    color: var(--color-gray-dark);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.disclaimer strong {
+    color: var(--color-black);
+    font-weight: var(--font-weight-bold);
+}
+
+.upload-instructions {
+    margin: 0;
+    padding: var(--spacing-md);
+    background: var(--color-gray-lighter);
+    border: 1px solid var(--color-gray-light);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.upload-instructions h3 {
+    font-size: 16px;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-black);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.upload-instructions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.upload-instructions ul li {
+    font-size: 14px;
+    color: var(--color-gray-dark);
+    line-height: 1.6;
+    padding-left: var(--spacing-md);
+    position: relative;
+    margin-bottom: var(--spacing-xs);
+}
+
+.upload-instructions ul li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--color-black);
+    font-weight: var(--font-weight-bold);
+}
+
+.upload-instructions p {
+    font-size: 14px;
+    color: var(--color-gray-dark);
+    line-height: 1.6;
+    text-align: center;
+    margin: 0;
+}
+
+.upload-area {
+    border: 2px dashed var(--color-gray);
+    border-radius: 4px;
+    padding: var(--spacing-md);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.upload-area:hover {
+    border-color: var(--color-black);
+    background: var(--color-gray-lighter);
+}
+
+.upload-area svg {
+    color: var(--color-dark-gray);
+    margin-bottom: var(--spacing-unit);
+}
+
+.upload-area p {
+    color: var(--color-dark-gray);
+    font-size: 16px;
+}
+
+/* Processing Section */
+.processing-section {
+    margin-top: calc(var(--spacing-unit) * 3);
+}
+
+.vat-info {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 2);
+    padding: var(--spacing-unit);
+    background: var(--color-gray-lighter);
+    border-left: 3px solid var(--color-black);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.vat-info strong {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-black);
+}
+
+.prices-info {
+    margin-left: auto;
+}
+
+/* Split View */
+.split-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: calc(var(--spacing-unit) * 2);
+    margin-bottom: calc(var(--spacing-unit) * 3);
+}
+
+.pdf-panel {
+    border: 1px solid var(--color-gray);
+    background: var(--color-white);
+}
+
+.pdf-panel h3 {
+    padding: var(--spacing-unit);
+    background: var(--color-light-gray);
+    font-size: 14px;
+    font-weight: var(--font-weight-bold);
+    margin: 0;
+    border-bottom: 1px solid var(--color-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pdf-viewer {
+    width: 100%;
+    height: 600px;
+    border: none;
+    display: block;
+}
+
+/* Actions */
+.actions {
+    text-align: center;
+}
+
+/* Buttons - Philipp Plein Style */
+.btn-primary,
+.btn-secondary {
+    padding: 14px 32px;
+    border: 2px solid var(--color-black);
+    font-size: 13px;
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--font-primary);
+}
+
+.btn-primary {
+    background: var(--color-black);
+    color: var(--color-white);
+    border-color: var(--color-black);
+}
+
+.btn-primary:hover {
+    background: var(--color-black);
+    border-color: var(--color-black);
+    color: var(--color-white);
+    /* Philipp Plein website: NO hover effect on primary buttons */
+}
+
+.btn-secondary {
+    background: transparent;
+    border-color: var(--color-black);
+    color: var(--color-black);
+    margin-left: var(--spacing-unit);
+}
+
+.btn-secondary:hover {
+    background: var(--color-black);
+    border-color: var(--color-black);
+    color: var(--color-white);
+}
+
+/* Error Section */
+.error-section {
+    margin-top: calc(var(--spacing-unit) * 4);
+    text-align: center;
+}
+
+.error-message {
+    padding: calc(var(--spacing-unit) * 2);
+    background: #F5F5F5;
+    border: 1px solid var(--color-gray);
+    border-left: 4px solid var(--color-black);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    color: var(--color-black);
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive - Philipp Plein Style */
+@media (max-width: 768px) {
+    header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    
+    .header-content {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+    
+    .logo-container img {
+        height: 32px;
+    }
+    
+    .logo-subtitle {
+        font-size: 10px;
+    }
+    
+    header .main-navigation {
+        justify-self: center;
+        order: 2;
+    }
+    
+    .nav-links {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+        justify-content: center;
+    }
+    
+    .header-actions {
+        justify-self: center;
+        order: 3;
+    }
+    
+    .split-view {
+        grid-template-columns: 1fr;
+    }
+    
+    .actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-unit);
+    }
+    
+    .btn-secondary {
+        margin-left: 0;
+    }
+}
+
