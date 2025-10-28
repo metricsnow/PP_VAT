@@ -536,12 +536,12 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean"):
     corrected_total = None
     
     # Look for "Total Value:" or similar patterns in the text
-    # Use negative lookbehind to avoid matching VAT amounts
+    # First try SUM-Net-Value as it's most specific and reliable
     total_patterns = [
-        r'(?<!VAT[:\s])(?<!\%\s*VAT[:\s])Total\s+Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
-        r'SUM-Net-Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
-        r'(?<!VAT[:\s])Betrag[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',
-        r'(?<!VAT[:\s])Gesamt[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})'
+        r'SUM-Net-Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',  # Most specific
+        r'(?<!VAT)Total\s+Value[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',  # Fixed-width lookbehind
+        r'Betrag[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})',  # German total
+        r'Gesamt[:\s]+(\d{1,3}(?:\.\d{3})*,\d{2})'  # German total alternative
     ]
     
     for pattern in total_patterns:
