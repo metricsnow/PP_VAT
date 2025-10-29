@@ -270,10 +270,14 @@ The function is called during PDF processing:
 - Validates shipping address position relative to packlist before selection
 - Improved logging to indicate which anchor was selected and why
 
-### 2. **VAT Label Highlight Extension (2025-01-29)**
-- Extended VAT label highlight rectangle to cover full VAT line including amount
-- Rectangle now covers: opening parenthesis, percentage, "VAT:" label, amount number, and closing parenthesis
-- Example: `(10,00 % VAT: 172,55)` fully highlighted
+### 2. **VAT Label Highlight Precision (2025-01-29)**
+- **Initial Implementation**: Extended VAT label highlight to cover full VAT line including amount
+- **Precision Fix**: Refined to only highlight exact VAT line boundaries
+  - Uses pattern matching to find exact VAT line text (e.g., `(10,00 % VAT: 172,55)`)
+  - Falls back to conservative 80px right extension if exact matching unavailable
+  - Prevents aggressive coverage of other values on the same vertical line
+  - Rectangle precisely covers: opening parenthesis, percentage, "VAT:" label, amount number, and closing parenthesis only
+- **Avoids**: Covering totals or other values below the VAT line
 
 ## Recommendations
 

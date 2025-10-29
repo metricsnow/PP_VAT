@@ -465,40 +465,43 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean", output_style:
             
             # Check if this text contains the VAT pattern like "(8,10 % VAT" or "(8.10 % VAT"
             if re.search(rf'{detected_vat}', text_near) and re.search(r'VAT', text_near, re.IGNORECASE):
-                # Find all text blocks on the same line to determine full line extent
-                text_blocks = page.get_text("blocks")
-                line_left = rect.x0 - 100  # Cover percentage part
-                line_right = rect.x1  # Start with VAT text end
-                line_top = rect.y0
-                line_bottom = rect.y1
+                # Use regex to find the complete VAT line pattern to get exact boundaries
+                # Pattern: "(10,00 % VAT: 172,55)" - find this exact text
+                vat_line_match = re.search(rf'\([^\s]*{detected_vat}[^\s]*\s*%\s*VAT[:\s]*[\d.,]+\)', text_near, re.IGNORECASE)
                 
-                # Find the closing parenthesis and VAT amount to extend right edge
-                # Look for pattern: "(10,00 % VAT: 172,55)" - need to find the closing parenthesis
-                for block in text_blocks:
-                    block_y0 = block[1]
-                    block_y1 = block[3]
-                    block_x0 = block[0]
-                    block_x1 = block[2]
-                    
-                    # Check if block is on the same line (within 3px vertically)
-                    if abs(block_y0 - rect.y0) < 3 or (block_y0 <= rect.y0 and block_y1 >= rect.y1):
-                        # Text before VAT (percentage)
-                        if block_x0 < rect.x0:
-                            line_left = min(line_left, block_x0)
-                        # Text after VAT (colon and amount including closing parenthesis)
-                        if block_x1 > rect.x1:
-                            line_right = max(line_right, block_x1)
-                        # Use actual line height
-                        line_top = min(line_top, block_y0)
-                        line_bottom = max(line_bottom, block_y1)
+                if vat_line_match:
+                    # Find the exact text positions for the VAT line
+                    vat_line_text = vat_line_match.group(0)
+                    # Search for this exact text to get its position
+                    vat_line_positions = page.search_for(vat_line_text)
+                    if vat_line_positions:
+                        # Use the exact position of the VAT line text
+                        vat_line_rect = vat_line_positions[0]
+                        line_left = vat_line_rect.x0
+                        line_right = vat_line_rect.x1
+                        line_top = vat_line_rect.y0
+                        line_bottom = vat_line_rect.y1
+                    else:
+                        # Fallback: use VAT rect with conservative extension
+                        line_left = rect.x0 - 100  # Opening parenthesis
+                        line_right = rect.x1 + 80  # Conservative: colon + amount + closing parenthesis (~80px)
+                        line_top = rect.y0
+                        line_bottom = rect.y1
+                else:
+                    # Fallback: if pattern not found, use conservative approach
+                    # Only extend slightly to right to cover colon and amount
+                    line_left = rect.x0 - 100  # Cover percentage part (opening parenthesis)
+                    line_right = rect.x1 + 80  # Very conservative: only 80px right (colon + short amount + closing parenthesis)
+                    line_top = rect.y0
+                    line_bottom = rect.y1
                 
-                # Draw highlight over the entire VAT label area including amount
+                # Draw highlight over the VAT label area - only the exact VAT line
                 padding = 2
-                # Extend the highlight to cover the full text area including closing parenthesis
+                # Extend the highlight to cover VAT line: opening parenthesis, percentage, "VAT:", amount, closing parenthesis
                 expanded_rect = pymupdf.Rect(
-                    line_left - padding,  # Cover the percentage part
+                    line_left - padding,  # Cover the percentage part and opening parenthesis
                     line_top - padding,
-                    line_right + padding,  # Extended right to cover VAT amount and closing parenthesis
+                    line_right + padding,  # Only covers the VAT line text itself
                     line_bottom + padding
                 )
                 vat_color = (1, 1, 0.85) if output_style == "review" else (1, 1, 1)
