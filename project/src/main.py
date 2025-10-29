@@ -89,25 +89,41 @@ def add_importer_info_box(doc, country_code: str, output_style: str = "review"):
     page = doc[0]
     page_rect = page.rect
     
-    # Find packlist row to use its upper border as lower boundary for importer box
+    # Find anchor point for importer box placement
+    # Priority: 1) Shipping address line, 2) Packlist row, 3) Default position
     y_position = 200  # Default position
     text_blocks = page.get_text("blocks")
     
-    # Look for packlist row containing "Packinglist No.:" and "Packinglist date:"
+    # Pattern for shipping address line (e.g., "Shipping Addr.:" or "Shipping Address:")
+    shipping_pattern = re.compile(r'shipping\s+addr', re.IGNORECASE)
+    
+    # Pattern for packlist row
     packlist_pattern = re.compile(r'packinglist', re.IGNORECASE)
     
+    shipping_row_top = None
+    shipping_row_x0 = None
     packlist_row_top = None
     packlist_row_x0 = None
     
-    # Find packlist row
-    for block in text_blocks[:50]:  # Check more blocks
+    # Search for both shipping address line and packlist row
+    for block in text_blocks[:50]:  # Check first 50 blocks
         block_text = block[4]
         block_y0 = block[1]  # Top y-coordinate (y0 from block)
         block_x0 = block[0]  # Left x-coordinate (x0 from block)
         
+        # Look for shipping address line
+        if shipping_pattern.search(block_text):
+            # Use the lowest shipping address top found (in case there are multiple)
+            # Lower y0 = higher on page
+            if shipping_row_top is None or block_y0 < shipping_row_top:
+                shipping_row_top = block_y0
+                shipping_row_x0 = block_x0  # Capture x position for alignment
+                print(f"[INFO] Found shipping address line '{block_text.strip()[:50]}' top at y={block_y0:.1f}, left at x={block_x0:.1f}")
+        
         # Look for packlist line - this gives us the top of the packlist row
         if packlist_pattern.search(block_text):
             # Use the lowest packlist top found (in case there are multiple)
+            # Lower y0 = higher on page
             if packlist_row_top is None or block_y0 < packlist_row_top:
                 packlist_row_top = block_y0
                 packlist_row_x0 = block_x0  # Capture x position for alignment
@@ -119,22 +135,54 @@ def add_importer_info_box(doc, country_code: str, output_style: str = "review"):
     box_width = 290  # Compact width to fit content (increased by 10px on right side)
     box_height = 50  # Reduced height for more compact box
     
-    # Calculate y_position: place above packlist row
-    if packlist_row_top is not None:
-        # Use upper border of packlist row as lower boundary for our box
-        # Position box so its bottom is above the packlist row top
-        margin = 8  # Reduced spacing between box bottom and packlist row top
-        y_position = packlist_row_top - box_height - margin
-        print(f"[INFO] Placing box above packlist row (top at y={packlist_row_top:.1f})")
-        print(f"[INFO] Box top will be at y={y_position:.1f} (box bottom at y={packlist_row_top - margin:.1f})")
-    else:
-        print(f"[WARNING] Could not find packlist row, using default y={y_position}")
+    # Calculate y_position: use shipping address only if it's above packlist row
+    # In PyMuPDF coordinate system: smaller y0 = higher on page
+    anchor_row_top = None
+    anchor_row_x0 = None
+    anchor_name = None
     
-    # Align yellow box text with packlist text start
-    if packlist_row_x0 is not None:
-        # Offset box left by text padding (10px) so the text inside aligns with packlist text
-        x = packlist_row_x0 - 10
-        print(f"[INFO] Aligning yellow box text with packlist text start at x={packlist_row_x0:.1f} (box at x={x:.1f})")
+    if shipping_row_top is not None and packlist_row_top is not None:
+        # Both found - validate that shipping address is above packlist (smaller y0 = higher on page)
+        if shipping_row_top < packlist_row_top:
+            # Shipping address is above packlist - use it as anchor
+            anchor_row_top = shipping_row_top
+            anchor_row_x0 = shipping_row_x0
+            anchor_name = "shipping address line"
+            print(f"[INFO] Shipping address line (y={shipping_row_top:.1f}) is above packlist row (y={packlist_row_top:.1f}) - using shipping address as anchor")
+        else:
+            # Shipping address is below packlist - use packlist as anchor instead
+            anchor_row_top = packlist_row_top
+            anchor_row_x0 = packlist_row_x0
+            anchor_name = "packlist row"
+            print(f"[WARNING] Shipping address line (y={shipping_row_top:.1f}) is not above packlist row (y={packlist_row_top:.1f}) - using packlist row as anchor instead")
+    elif shipping_row_top is not None:
+        # Only shipping address found - use it as anchor
+        anchor_row_top = shipping_row_top
+        anchor_row_x0 = shipping_row_x0
+        anchor_name = "shipping address line"
+        print(f"[INFO] Shipping address line found, packlist row not found - using shipping address as anchor")
+    elif packlist_row_top is not None:
+        # Only packlist found - use it as anchor
+        anchor_row_top = packlist_row_top
+        anchor_row_x0 = packlist_row_x0
+        anchor_name = "packlist row"
+        print(f"[INFO] Packlist row found, shipping address line not found - using packlist row as anchor")
+    
+    if anchor_row_top is not None:
+        # Use upper border of anchor row as lower boundary for our box
+        # Position box so its bottom is above the anchor row top
+        margin = 8  # Reduced spacing between box bottom and anchor row top
+        y_position = anchor_row_top - box_height - margin
+        print(f"[INFO] Placing box above {anchor_name} (top at y={anchor_row_top:.1f})")
+        print(f"[INFO] Box top will be at y={y_position:.1f} (box bottom at y={anchor_row_top - margin:.1f})")
+    else:
+        print(f"[WARNING] Could not find shipping address line or packlist row, using default y={y_position}")
+    
+    # Align box text with anchor text start
+    if anchor_row_x0 is not None:
+        # Offset box left by text padding (10px) so the text inside aligns with anchor text
+        x = anchor_row_x0 - 10
+        print(f"[INFO] Aligning box text with {anchor_name} text start at x={anchor_row_x0:.1f} (box at x={x:.1f})")
     else:
         x = 10  # Fallback: Left side with small padding
     
@@ -410,25 +458,52 @@ def process_invoice(pdf_path: Path, output_suffix: str = "_clean", output_style:
             expanded_search_rect = pymupdf.Rect(
                 rect.x0 - 150,  # Expand left to catch the percentage
                 rect.y0 - 10,
-                rect.x1 + 50,  # Expand right
+                rect.x1 + 200,  # Expand right significantly to find VAT amount
                 rect.y1 + 10
             )
             text_near = page.get_text("text", clip=expanded_search_rect)
             
             # Check if this text contains the VAT pattern like "(8,10 % VAT" or "(8.10 % VAT"
             if re.search(rf'{detected_vat}', text_near) and re.search(r'VAT', text_near, re.IGNORECASE):
-                # Draw highlight over the entire VAT label area with appropriate color
+                # Find all text blocks on the same line to determine full line extent
+                text_blocks = page.get_text("blocks")
+                line_left = rect.x0 - 100  # Cover percentage part
+                line_right = rect.x1  # Start with VAT text end
+                line_top = rect.y0
+                line_bottom = rect.y1
+                
+                # Find the closing parenthesis and VAT amount to extend right edge
+                # Look for pattern: "(10,00 % VAT: 172,55)" - need to find the closing parenthesis
+                for block in text_blocks:
+                    block_y0 = block[1]
+                    block_y1 = block[3]
+                    block_x0 = block[0]
+                    block_x1 = block[2]
+                    
+                    # Check if block is on the same line (within 3px vertically)
+                    if abs(block_y0 - rect.y0) < 3 or (block_y0 <= rect.y0 and block_y1 >= rect.y1):
+                        # Text before VAT (percentage)
+                        if block_x0 < rect.x0:
+                            line_left = min(line_left, block_x0)
+                        # Text after VAT (colon and amount including closing parenthesis)
+                        if block_x1 > rect.x1:
+                            line_right = max(line_right, block_x1)
+                        # Use actual line height
+                        line_top = min(line_top, block_y0)
+                        line_bottom = max(line_bottom, block_y1)
+                
+                # Draw highlight over the entire VAT label area including amount
                 padding = 2
-                # Extend the highlight to cover the full text area
+                # Extend the highlight to cover the full text area including closing parenthesis
                 expanded_rect = pymupdf.Rect(
-                    rect.x0 - 100,  # Cover the percentage part
-                    rect.y0 - padding,
-                    rect.x1 + 50,
-                    rect.y1 + padding
+                    line_left - padding,  # Cover the percentage part
+                    line_top - padding,
+                    line_right + padding,  # Extended right to cover VAT amount and closing parenthesis
+                    line_bottom + padding
                 )
                 vat_color = (1, 1, 0.85) if output_style == "review" else (1, 1, 1)
                 page.draw_rect(expanded_rect, color=vat_color, fill=vat_color)
-                print(f"  -> VAT label highlighted on page {page_num + 1}")
+                print(f"  -> VAT label highlighted on page {page_num + 1} (rect: x={expanded_rect.x0:.1f}-{expanded_rect.x1:.1f}, y={expanded_rect.y0:.1f}-{expanded_rect.y1:.1f})")
                 break  # Only highlight once per page
     
     # STEP 2: Apply highlights for VAT amount line
